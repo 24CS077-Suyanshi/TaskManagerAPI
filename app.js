@@ -1,5 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 
 const app = express();
 
@@ -8,8 +9,8 @@ const errorHandler = require("./middleware/errorHandler");
 const taskRoutes = require("./routes/taskRoutes");
 
 // Middleware
+app.use(cors());
 app.use(express.json());
-
 app.use(logger);
 
 // MongoDB Connection
@@ -35,7 +36,7 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // Start Server
-const PORT = 3000;
+const PORT = 5000;
 
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
