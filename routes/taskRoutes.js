@@ -1,107 +1,44 @@
+
 const express = require("express");
+const Task = require("../models/Task");
+
+const authMiddleware = require("../middleware/authMiddleware");
+const validateTask = require("../middleware/validateTask");
 
 const router = express.Router();
 
-const Task = require("../models/Task");
+// Protect every route
+router.use(authMiddleware);
 
-router.get("/", async (req, res, next) => {
+// GET all tasks of logged-in user
+router.get("/", async (req, res) => {
+  try {
+    const tasks = await Task.find({
+      user: req.user.id
+    });
 
-    try {
-
-        const tasks = await Task.find();
-
-        res.status(200).json(tasks);
-
-    } catch (error) {
-
-        next(error);
-
-    }
-
+    return res.status(200).json(tasks);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to fetch tasks"
+    });
+  }
 });
 
-router.post("/", async (req, res, next) => {
+// POST - Create a new task with validation
+router.post("/", validateTask, async (req, res) => {
+  try {
+    const task = await Task.create({
+      ...req.body,
+      user: req.user.id
+    });
 
-    try {
-
-        const task = new Task({
-            title: req.body.title,
-            description: req.body.description,
-            completed: req.body.completed
-        });
-
-        const savedTask = await task.save();
-
-        res.status(201).json({
-            message: "Task created successfully",
-            task: savedTask
-        });
-
-    } catch (error) {
-
-        next(error);
-
-    }
-
-});
-
-router.put("/:id", async (req, res, next) => {
-
-    try {
-
-        const task = await Task.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            {
-                new: true,
-                runValidators: true
-            }
-        );
-
-        if (!task) {
-            return res.status(404).json({
-                message: "Task not found"
-            });
-        }
-
-        res.status(200).json({
-            message: "Task updated successfully",
-            task: task
-        });
-
-    } catch (error) {
-
-        next(error);
-
-    }
-
-});
-router.delete("/:id", async (req, res, next) => {
-
-    try {
-
-        const task = await Task.findByIdAndDelete(req.params.id);
-
-        if (!task) {
-            return res.status(404).json({
-                message: "Task not found"
-            });
-        }
-
-        res.status(200).json({
-            message: "Task deleted successfully"
-        });
-
-    } catch (error) {
-
-        next(error);
-
-    }
-
-});
-
-router.get("/error", (req, res) => {
-    throw new Error("Test error");
+    return res.status(201).json(task);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to create task"
+    });
+  }
 });
 
 module.exports = router;
