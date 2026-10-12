@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
-const API_URL = "http://localhost:5000/tasks";
+const AUTH_URL = "http://localhost:5000/api/auth";
+const API_URL = "http://localhost:5000/api/tasks";
 
 function App() {
+    const [token, setToken] = useState(
+        localStorage.getItem("token") || ""
+    );
+    const [isRegister, setIsRegister] = useState(false);
+
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
 
     const [tasks, setTasks] = useState([]);
     const [title, setTitle] = useState("");
@@ -13,298 +21,327 @@ function App() {
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
 
-    // GET
-    const fetchTasks = async () => {
+    // REGISTER / LOGIN
+    const handleAuth = async (e) => {
+        e.preventDefault();
+        setError("");
+        setMessage("");
+
         try {
             setLoading(true);
-            setError("");
 
-            const response = await fetch(API_URL);
+            const endpoint = isRegister ? "register" : "login";
 
-            if (!response.ok) {
-                throw new Error("Failed to fetch tasks");
-            }
+            const response = await fetch(`${AUTH_URL}/${endpoint}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ email, password })
+            });
 
             const data = await response.json();
 
-            setTasks(data);
+            if (!response.ok) {
+                throw new Error(data.message || "Authentication failed");
+            }
 
-        } catch (error) {
-            setError(error.message);
-
+            if (isRegister) {
+                setMessage("Registration successful. Please log in.");
+                setIsRegister(false);
+                setPassword("");
+            } else {
+                localStorage.setItem("token", data.token);
+                setToken(data.token);
+                setPassword("");
+                setMessage("Login successful");
+            }
+        } catch (err) {
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    // POST
-    const addTask = async (e) => {
+    // GET TASKS
+    const fetchTasks = async () => {
+        try {
+            setLoading(true);
+            setError("");
 
+            const response = await fetch(API_URL, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Failed to fetch tasks");
+            }
+
+            setTasks(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // CREATE TASK
+    const addTask = async (e) => {
         e.preventDefault();
+        setError("");
+        setMessage("");
 
         if (!title.trim()) {
             setError("Task title is required");
             return;
         }
 
-        const temporaryTask = {
-            _id: "temp-" + Date.now(),
-            title: title,
-            description: description,
-            completed: false
-        };
-
-        // Optimistic update
-        setTasks((prevTasks) => [
-            ...prevTasks,
-            temporaryTask
-        ]);
-
-        const taskTitle = title;
-        const taskDescription = description;
-
-        setTitle("");
-        setDescription("");
-
         try {
-
             setLoading(true);
-            setError("");
 
             const response = await fetch(API_URL, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    title: taskTitle,
-                    description: taskDescription,
+                    title: title.trim(),
+                    description: description.trim(),
                     completed: false
                 })
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to create task");
-            }
-
             const data = await response.json();
 
-            setTasks((prevTasks) =>
-                prevTasks.map((task) =>
-                    task._id === temporaryTask._id
-                        ? data.task
-                        : task
-                )
-            );
+            if (!response.ok) {
+                throw new Error(data.message || "Failed to create task");
+            }
 
+            setTasks((prev) => [...prev, data]);
+            setTitle("");
+            setDescription("");
             setMessage("Task created successfully");
-
-        } catch (error) {
-
-            setTasks((prevTasks) =>
-                prevTasks.filter(
-                    (task) => task._id !== temporaryTask._id
-                )
-            );
-
-            setError(error.message);
-
+        } catch (err) {
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    // PUT
+    // UPDATE TASK
     const updateTask = async (task) => {
+        const newTitle = window.prompt("Enter new task title:", task.title);
 
-        const newTitle = window.prompt(
-            "Enter new task title:",
-            task.title
-        );
-
-        if (!newTitle || !newTitle.trim()) {
-            return;
-        }
+        if (newTitle === null || !newTitle.trim()) return;
 
         const newDescription = window.prompt(
             "Enter new description:",
             task.description || ""
         );
 
-        try {
+        if (newDescription === null) return;
 
+        try {
             setLoading(true);
             setError("");
+            setMessage("");
 
             const response = await fetch(`${API_URL}/${task._id}`, {
                 method: "PUT",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    title: newTitle,
+                    title: newTitle.trim(),
                     description: newDescription,
                     completed: task.completed
                 })
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to update task");
-            }
-
             const data = await response.json();
 
-            setTasks((prevTasks) =>
-                prevTasks.map((item) =>
-                    item._id === task._id
-                        ? data.task
-                        : item
-                )
+            if (!response.ok) {
+                throw new Error(data.message || "Failed to update task");
+            }
+
+            setTasks((prev) =>
+                prev.map((item) => item._id === task._id ? data : item)
             );
 
             setMessage("Task updated successfully");
-
-        } catch (error) {
-
-            setError(error.message);
-
+        } catch (err) {
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    // DELETE
+    // DELETE TASK
     const deleteTask = async (id) => {
-
-        const confirmed = window.confirm(
-            "Are you sure you want to delete this task?"
-        );
-
-        if (!confirmed) {
+        if (!window.confirm("Are you sure you want to delete this task?")) {
             return;
         }
 
         try {
-
             setLoading(true);
             setError("");
+            setMessage("");
 
             const response = await fetch(`${API_URL}/${id}`, {
-                method: "DELETE"
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error("Failed to delete task");
+                throw new Error(data.message || "Failed to delete task");
             }
 
-            setTasks((prevTasks) =>
-                prevTasks.filter(
-                    (task) => task._id !== id
-                )
-            );
-
+            setTasks((prev) => prev.filter((task) => task._id !== id));
             setMessage("Task deleted successfully");
-
-        } catch (error) {
-
-            setError(error.message);
-
+        } catch (err) {
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    // Fetch when page loads
+    // LOGOUT
+    const logout = () => {
+        localStorage.removeItem("token");
+        setToken("");
+        setTasks([]);
+        setEmail("");
+        setPassword("");
+        setError("");
+        setMessage("Logged out successfully");
+    };
+
+    // FETCH AFTER LOGIN
     useEffect(() => {
-        fetchTasks();
-    }, []);
+        if (token) {
+            fetchTasks();
+        } else {
+            setTasks([]);
+        }
+    }, [token]);
 
     return (
         <div className="container">
-
             <h1>Task Manager</h1>
 
-            {loading && (
-                <p>Loading...</p>
-            )}
+            {error && <p className="error">{error}</p>}
+            {message && <p className="success">{message}</p>}
 
-            {error && (
-                <p className="error">{error}</p>
-            )}
+            {!token ? (
+                <>
+                    <h2>{isRegister ? "Register" : "Login"}</h2>
 
-            {message && (
-                <p className="success">{message}</p>
-            )}
+                    <form onSubmit={handleAuth}>
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
 
-            <form onSubmit={addTask}>
+                        <input
+                            type="password"
+                            placeholder="Password (at least 6 characters)"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            minLength={6}
+                            required
+                        />
 
-                <input
-                    type="text"
-                    placeholder="Task title"
-                    value={title}
-                    onChange={(e) =>
-                        setTitle(e.target.value)
-                    }
-                />
-
-                <input
-                    type="text"
-                    placeholder="Task description"
-                    value={description}
-                    onChange={(e) =>
-                        setDescription(e.target.value)
-                    }
-                />
-
-                <button type="submit">
-                    Add Task
-                </button>
-
-            </form>
-
-            <h2>Tasks</h2>
-
-            {tasks.length === 0 && !loading && (
-                <p>No tasks available.</p>
-            )}
-
-            {tasks.map((task) => (
-
-                <div className="task" key={task._id}>
-
-                    <h3>{task.title}</h3>
+                        <button type="submit" disabled={loading}>
+                            {loading
+                                ? "Please wait..."
+                                : isRegister ? "Register" : "Login"}
+                        </button>
+                    </form>
 
                     <p>
-                        {task.description}
+                        {isRegister
+                            ? "Already have an account?"
+                            : "Don't have an account?"}
+                        {" "}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsRegister(!isRegister);
+                                setError("");
+                                setMessage("");
+                            }}
+                        >
+                            {isRegister ? "Login" : "Register"}
+                        </button>
                     </p>
-
-                    <p>
-                        Status:
-                        {task.completed
-                            ? " Completed"
-                            : " Pending"}
-                    </p>
-
-                    <button
-                        onClick={() =>
-                            updateTask(task)
-                        }
-                    >
-                        Update
+                </>
+            ) : (
+                <>
+                    <button type="button" onClick={logout}>
+                        Logout
                     </button>
 
-                    <button
-                        onClick={() =>
-                            deleteTask(task._id)
-                        }
-                    >
-                        Delete
-                    </button>
+                    <form onSubmit={addTask}>
+                        <input
+                            type="text"
+                            placeholder="Task title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            required
+                        />
 
-                </div>
+                        <input
+                            type="text"
+                            placeholder="Task description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                        />
 
-            ))}
+                        <button type="submit" disabled={loading}>
+                            Add Task
+                        </button>
+                    </form>
 
+                    <h2>Tasks</h2>
+
+                    {loading && <p>Loading...</p>}
+
+                    {!loading && tasks.length === 0 && (
+                        <p>No tasks available.</p>
+                    )}
+
+                    {tasks.map((task) => (
+                        <div className="task" key={task._id}>
+                            <h3>{task.title}</h3>
+                            <p>{task.description}</p>
+                            <p>
+                                Status: {task.completed ? "Completed" : "Pending"}
+                            </p>
+
+                            <button onClick={() => updateTask(task)}>
+                                Update
+                            </button>
+
+                            <button onClick={() => deleteTask(task._id)}>
+                                Delete
+                            </button>
+                        </div>
+                    ))}
+                </>
+            )}
         </div>
     );
 }

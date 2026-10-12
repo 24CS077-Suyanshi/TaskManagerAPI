@@ -5,8 +5,10 @@ const mongoose = require("mongoose");
 
 const authRoutes = require("./routes/authRoutes");
 const taskRoutes = require("./routes/taskRoutes");
-
+const cors = require("cors");
 const app = express();
+
+app.use(cors());
 
 // Middleware to parse JSON request bodies
 app.use(express.json());

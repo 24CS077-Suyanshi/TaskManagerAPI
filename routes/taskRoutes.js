@@ -1,4 +1,3 @@
-
 const express = require("express");
 const Task = require("../models/Task");
 
@@ -25,7 +24,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST - Create a new task with validation
+// POST - Create a new task
 router.post("/", validateTask, async (req, res) => {
   try {
     const task = await Task.create({
@@ -37,6 +36,81 @@ router.post("/", validateTask, async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: "Failed to create task"
+    });
+  }
+});
+
+// PUT - Update a task belonging to logged-in user
+router.put("/:id", validateTask, async (req, res) => {
+  try {
+    const task = await Task.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        user: req.user.id
+      },
+      {
+        $set: {
+          title: req.body.title,
+          ...(req.body.description !== undefined && {
+            description: req.body.description
+          }),
+          ...(req.body.completed !== undefined && {
+            completed: req.body.completed
+          })
+        }
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    if (!task) {
+      return res.status(404).json({
+        message: "Task not found"
+      });
+    }
+
+    return res.status(200).json(task);
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        message: "Invalid task ID"
+      });
+    }
+
+    return res.status(500).json({
+      message: "Failed to update task"
+    });
+  }
+});
+
+// DELETE - Delete a task belonging to logged-in user
+router.delete("/:id", async (req, res) => {
+  try {
+    const task = await Task.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user.id
+    });
+
+    if (!task) {
+      return res.status(404).json({
+        message: "Task not found"
+      });
+    }
+
+    return res.status(200).json({
+      message: "Task deleted successfully"
+    });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        message: "Invalid task ID"
+      });
+    }
+
+    return res.status(500).json({
+      message: "Failed to delete task"
     });
   }
 });
