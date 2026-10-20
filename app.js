@@ -1,4 +1,5 @@
 require("dotenv").config();
+require("./listeners");
 
 const express = require("express");
 const mongoose = require("mongoose");

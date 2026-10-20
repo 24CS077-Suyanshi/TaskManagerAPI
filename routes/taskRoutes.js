@@ -5,6 +5,7 @@ const Task = require("../models/Task");
 const authMiddleware = require("../middleware/authMiddleware");
 const validateTask = require("../middleware/validateTask");
 const cache = require("../cache");
+const taskEvents = require("../events");
 const cacheStats = cache.cacheStats;
 
 const router = express.Router();
@@ -99,6 +100,8 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST - Create a new task
+
+ // POST - Create a new task
 router.post("/", validateTask, async (req, res) => {
   try {
     const task = await Task.create({
@@ -109,15 +112,26 @@ router.post("/", validateTask, async (req, res) => {
     // Invalidate the task list cache
     cache.del(`all_tasks_${req.user.id}`);
 
-    return res.status(201).json(task);
+    console.log(
+      `[API] Response sent at ${new Date().toISOString()}`
+    );
+
+    // Send response first
+    res.status(201).json(task);
+
+    // Emit event after sending the response
+    taskEvents.emit("task-created", task);
   } catch (error) {
     console.error("Create task error:", error);
 
-    return res.status(500).json({
-      message: "Failed to create task"
-    });
+    if (!res.headersSent) {
+      return res.status(500).json({
+        message: "Failed to create task"
+      });
+    }
   }
 });
+
 
 // PUT - Update a task
 router.put("/:id", validateTask, async (req, res) => {
@@ -171,6 +185,8 @@ router.put("/:id", validateTask, async (req, res) => {
 });
 
 // DELETE - Delete a task
+
+ // DELETE - Delete a task
 router.delete("/:id", async (req, res) => {
   try {
     const task = await Task.findOneAndDelete({
@@ -188,22 +204,30 @@ router.delete("/:id", async (req, res) => {
     cache.del(`all_tasks_${req.user.id}`);
     cache.del(`task_${req.user.id}_${req.params.id}`);
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "Task deleted successfully"
     });
+
+    // Emit delete event after response
+    taskEvents.emit("task-deleted", task);
   } catch (error) {
     if (error.name === "CastError") {
-      return res.status(400).json({
-        message: "Invalid task ID"
-      });
+      if (!res.headersSent) {
+        return res.status(400).json({
+          message: "Invalid task ID"
+        });
+      }
     }
 
     console.error("Delete task error:", error);
 
-    return res.status(500).json({
-      message: "Failed to delete task"
-    });
+    if (!res.headersSent) {
+      return res.status(500).json({
+        message: "Failed to delete task"
+      });
+    }
   }
 });
+
 
 module.exports = router;
