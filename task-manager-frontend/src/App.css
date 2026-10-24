@@ -50,3 +50,63 @@ button {
 .success {
     color: green;
 }
+
+textarea {
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+}
+
+.input-with-button {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.input-with-button input {
+    flex: 1;
+}
+
+.ai-btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-weight: 600;
+    white-space: nowrap;
+    border: none;
+    transition: all 0.2s ease-in-out;
+}
+
+.ai-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    transform: translateY(-1px);
+}
+
+.ai-btn:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.ai-badge {
+    background: #eef2ff;
+    color: #4338ca;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid #c7d2fe;
+}
+
+.ai-disclaimer {
+    font-size: 11px;
+    color: #64748b;
+    margin: 2px 0;
+    line-height: 1.4;
+    background: #f8fafc;
+    padding: 6px 10px;
+    border-left: 3px solid #94a3b8;
+    border-radius: 4px;
+}

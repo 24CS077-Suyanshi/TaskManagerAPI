@@ -3,6 +3,7 @@ import "../App.css";
 
 const AUTH_URL = "http://localhost:5000/api/auth";
 const API_URL = "http://localhost:5000/api/tasks";
+const AI_URL = "http://localhost:5000/api/ai/generate-description";
 
 function Projects() {
     const [token, setToken] = useState(
@@ -18,8 +19,11 @@ function Projects() {
     const [description, setDescription] = useState("");
 
     const [loading, setLoading] = useState(false);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiNotice, setAiNotice] = useState("");
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
+
 
     // REGISTER / LOGIN
     const handleAuth = async (e) => {
@@ -86,6 +90,48 @@ function Projects() {
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // GENERATE AI DESCRIPTION (Practical 13)
+    const generateAiDescription = async () => {
+        if (!title.trim()) {
+            setError("Please enter a task title first to generate an AI description.");
+            return;
+        }
+
+        setError("");
+        setMessage("");
+        setAiNotice("");
+
+        try {
+            setAiLoading(true);
+
+            const response = await fetch(AI_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ title: title.trim() })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok && response.status !== 200) {
+                throw new Error(data.message || "Failed to generate AI description");
+            }
+
+            if (data.description) {
+                setDescription(data.description);
+                setMessage("AI description generated! You can edit it before saving.");
+                setAiNotice(data.source ? `Generated via: ${data.source}` : "AI Suggestion ready");
+            } else {
+                setMessage("No description generated. You can enter one manually.");
+            }
+        } catch (err) {
+            setError(err.message || "AI service temporarily unavailable");
+        } finally {
+            setAiLoading(false);
         }
     };
 
@@ -294,24 +340,45 @@ function Projects() {
                         Logout
                     </button>
 
-                    <form onSubmit={addTask}>
-                        <input
-                            type="text"
-                            placeholder="Task title"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                        />
+                    <form onSubmit={addTask} className="task-form">
+                        <div className="input-with-button">
+                            <input
+                                type="text"
+                                placeholder="Task title (e.g., Deploy to AWS, Write Unit Tests)"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                required
+                            />
+                            <button
+                                type="button"
+                                className="ai-btn"
+                                onClick={generateAiDescription}
+                                disabled={aiLoading || !title.trim()}
+                                title="Generate an AI-powered task description based on the title"
+                            >
+                                {aiLoading ? "⏳ Generating..." : "✨ Generate AI Description"}
+                            </button>
+                        </div>
 
-                        <input
-                            type="text"
-                            placeholder="Task description"
+                        {aiNotice && (
+                            <div className="ai-badge">
+                                🤖 {aiNotice}
+                            </div>
+                        )}
+
+                        <textarea
+                            placeholder="Task description (Editable suggestion from AI or manual input)"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
+                            rows={3}
                         />
 
+                        <p className="ai-disclaimer">
+                            ⚠️ <strong>AI Disclaimer:</strong> Content suggested by AI is editable and should be reviewed for accuracy before saving.
+                        </p>
+
                         <button type="submit" disabled={loading}>
-                            Add Task
+                            {loading ? "Adding..." : "Add Task"}
                         </button>
                     </form>
 

@@ -121,8 +121,41 @@ An automated CI pipeline is configured using GitHub Actions (`.github/workflows/
 npm test
 ```
 
+## AI API Integration (Practical 13: Responsible AI & Graceful Degradation)
+
+An AI-powered task description generator is integrated using external LLM APIs (OpenAI / Gemini) with strict security and graceful failure handling:
+
+### 1. Architecture Flow
+`React Frontend ('Generate AI Description' Click)`
+  ⬇
+`Express Backend (/api/ai/generate-description)`
+  ⬇ (API Key kept server-side only in `.env`)
+`OpenAI API (GPT-4o-mini)`
+  ⬇
+`Response parsed ➔ sent to React ➔ editable suggestion shown in task form`
+
+### 2. AI Endpoint
+- **URL**: `POST /api/ai/generate-description`
+- **Request Body**: `{ "title": "Setup CI/CD Pipeline" }`
+- **Response**:
+```json
+{
+  "description": "Configure GitHub Actions workflows to automate testing and deployment for robust code releases.",
+  "source": "OpenAI GPT-4o-mini",
+  "fallback": false
+}
+```
+
+### 3. Graceful Degradation & Resilience
+- If the OpenAI API key is missing, invalid (e.g. 401 Unauthorized), or times out, the backend catches the error and immediately returns a context-aware heuristic description (`fallback: true`) with status 200.
+- The application never crashes and the core task creation workflow is never blocked.
+
+### 4. Rate Limiting & User Control
+- **In-memory Rate Limiting**: Max 1 AI request per 10 seconds per IP to avoid quota exhaustion.
+- **Editable Suggestions**: AI output is populated into an editable textarea, letting users review or customize before submitting.
+- **AI Disclaimer**: Clear UI notice reminding users to review AI-generated suggestions.
+
 ## Security
 
+The `.env` file is ignored by Git and must never be committed. The JWT secret, MongoDB connection string, and `OPENAI_API_KEY` remain strictly on the backend server.
 
-The `.env` file is ignored by Git and must not be committed. The JWT secret
-and MongoDB connection string should remain local.

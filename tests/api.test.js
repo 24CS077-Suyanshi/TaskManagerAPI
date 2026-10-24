@@ -23,4 +23,24 @@ describe("API CI/CD Automated Tests", () => {
       .send({});
     expect(res.statusCode).toBe(400);
   });
+
+  // Test 4 (Practical 13): Testing AI endpoint validation
+  test("POST /api/ai/generate-description without title returns 400", async () => {
+    const res = await request(app)
+      .post("/api/ai/generate-description")
+      .send({});
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty("message");
+  });
+
+  // Test 5 (Practical 13): Testing AI endpoint with title returns 200 and description
+  test("POST /api/ai/generate-description with valid title returns description", async () => {
+    const res = await request(app)
+      .post("/api/ai/generate-description")
+      .send({ title: "Build Docker Image" });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty("description");
+    expect(typeof res.body.description).toBe("string");
+    expect(res.body.description.length).toBeGreaterThan(0);
+  });
 });

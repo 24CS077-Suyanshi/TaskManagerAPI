@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 
 const authRoutes = require("./routes/authRoutes");
 const taskRoutes = require("./routes/taskRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 const cors = require("cors");
 const app = express();
 
@@ -31,6 +32,8 @@ app.use((req, res, next) => {
 // Register routes
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/ai", aiRoutes);
+
 
 // Handle unknown routes
 app.use((req, res) => {
