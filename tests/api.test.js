@@ -2,10 +2,11 @@ const request = require("supertest");
 const app = require("../app");
 
 describe("API CI/CD Automated Tests", () => {
-  // Test 1: Testing unknown routes returns 404
+  // Test 1: DELIBERATELY BROKEN TEST for CI failure demonstration
   test("GET /api/unknown-endpoint returns 404 Not Found", async () => {
     const res = await request(app).get("/api/unknown-endpoint");
-    expect(res.statusCode).toBe(404);
+    // Deliberately expecting 200 instead of 404 to trigger CI Pipeline failure (Red X)
+    expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty("message", "Route not found");
   });
 
