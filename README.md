@@ -1,6 +1,9 @@
 # Task Manager API
 
+[![CI Pipeline](https://github.com/24CS077-Suyanshi/TaskManagerAPI/actions/workflows/ci.yml/badge.svg)](https://github.com/24CS077-Suyanshi/TaskManagerAPI/actions/workflows/ci.yml)
+
 Full-stack task management application built with React, Node.js, Express,
+
 MongoDB, and JWT authentication.
 
 ## Project structure
@@ -105,6 +108,17 @@ docker ps
 ### 4. Stop All Containers
 ```bash
 docker compose down
+```
+
+## CI/CD Pipeline (Practical 12: GitHub Actions)
+
+An automated CI pipeline is configured using GitHub Actions (`.github/workflows/ci.yml`):
+- Triggers automatically on every `push` and `pull_request` to the `main` branch.
+- Checks out the repository, sets up Node.js 20, installs dependencies with `npm install`, and runs automated tests with `npm test`.
+
+### Running Tests Locally
+```bash
+npm test
 ```
 
 ## Security
