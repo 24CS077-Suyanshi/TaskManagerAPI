@@ -42,19 +42,17 @@ app.use((req, res) => {
 // Start server after connecting to MongoDB
 async function startServer() {
   try {
-    if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET is missing from .env");
-    }
+    const jwtSecret = process.env.JWT_SECRET || "charusat_practical11_jwt_secret_key_12345";
+    process.env.JWT_SECRET = jwtSecret;
 
-    if (!process.env.MONGO_URI) {
-      throw new Error("MONGO_URI is missing from .env");
-    }
+    const mongoURI = process.env.MONGO_URI || "mongodb://mongodb:27017/taskdb";
 
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(mongoURI);
 
-    console.log("MongoDB connected successfully");
+    console.log(`MongoDB connected successfully to ${mongoURI}`);
 
     const PORT = process.env.PORT || 5000;
+
 
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);

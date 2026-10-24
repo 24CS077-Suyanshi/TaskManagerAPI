@@ -83,7 +83,32 @@ Authorization: Bearer <token>
 4. Refresh the browser to confirm that tasks remain saved in MongoDB.
 5. Use the Postman files in `postman/` to verify the backend independently.
 
+## Docker Setup (Practical 11: Containerization)
+
+Run the entire full-stack application (React Frontend, Express Backend, and MongoDB) with a single command using Docker Compose:
+
+### 1. Build and Start All Containers
+```bash
+docker compose up -d --build
+```
+
+### 2. Service Endpoints
+- **Frontend (React)**: [http://localhost:5173](http://localhost:5173)
+- **Backend API**: [http://localhost:5000](http://localhost:5000)
+- **MongoDB**: `localhost:27017` (Internal service name: `mongodb`)
+
+### 3. Verify Running Containers
+```bash
+docker ps
+```
+
+### 4. Stop All Containers
+```bash
+docker compose down
+```
+
 ## Security
+
 
 The `.env` file is ignored by Git and must not be committed. The JWT secret
 and MongoDB connection string should remain local.
